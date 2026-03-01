@@ -58,71 +58,88 @@ export default function HealthStep({ data, onUpdate, onBack, setMealPlan }) {
         messages: [
           {
             role: 'system',
-            content: `You are an expert nutritionist. Generate a personalized 7-day meal plan.
-            Return ONLY valid JSON in this exact format with no extra text:
-            {
-              "summary": "2-3 sentence explanation of why this plan works for this person",
-              "groceryList": [{"item": "Chicken breast", "amount": "500g"}, ...]
-              "days": [
-                {
-                  "day": "Monday",
-                  "totalCalories": 1800,
-                  "protein": 120,
-                  "carbs": 180,
-                  "fat": 60,
-                  "meals": [
-                    {
-                      "type": "BREAKFAST",
-                      "name": "Meal name",
-                      "description": "Brief cooking instructions",
-                      "ingredients": [{"name": "ingredient name", "amount": "150g"}],
-                      "calories": 400,
-                      "protein": 30,
-                      "carbs": 45,
-                      "fat": 12,
-                      "prepTime": 10
-                    }
-                  ],
-                  "whyThisWorks": "One sentence explanation for this day"
-                }
-              ]
-            }
-              IMPORTANT: Keep descriptions concise (max 20 words each). Keep ingredient lists to max 6 items per meal. This is critical to avoid response cutoff.
-              STRICT RULES:
-              - Use grams (g) for all ingredients that are weighed: meats, vegetables, grains, dairy, oils, spices, powders, liquids.
-              - Use whole numbers (count) for countable items like eggs (e.g. "2 eggs"), roti ("2 rotis"), bread slices ("2 slices"), fruits like banana ("1 banana"), apple ("1 apple").
-              - Never use cups, bowls, tablespoons, teaspoons, or any volumetric measurement.
-              - Example: "Oats — 80g", "Milk — 150g", "Eggs — 2", "Roti — 2", "Chicken breast — 150g", "Olive oil — 10g", "Banana — 1"
-              - Grocery list must follow the same rules.
-            Include breakfast, lunch, dinner and snacks based on meals per day. Strictly avoid disliked foods and allergens. Incorporate loved foods.`
-            
+            content: `You are an expert nutritionist and professional chef. Generate a highly varied, creative and detailed 7-day meal plan.
+
+VARIETY RULES - STRICTLY FOLLOW:
+- Every single meal across all 7 days must be UNIQUE - never repeat the same dish twice
+- Use loved foods in different preparations each day. Example: if they love chicken → Monday=Grilled Chicken Bowl, Tuesday=Chicken Curry, Wednesday=Chicken Stir Fry, Thursday=Lemon Herb Baked Chicken, Friday=Chicken Soup
+- Vary cooking styles daily: grilling, baking, stir-frying, steaming, slow cooking, sauteing
+- Vary cuisines across the week: Indian, Mediterranean, Asian, Mexican, Middle Eastern, Continental
+- Breakfast must never repeat: rotate between egg dishes, porridges, smoothie bowls, parathas, toasts, idli, upma, omelettes, pancakes
+
+RECIPE RULES - BE VERY SPECIFIC:
+- Description must be a clear step-by-step mini recipe of 3-4 sentences
+- Always mention exact cooking technique, time and temperature
+- Good example: "Heat 10g oil in pan over medium heat. Add 5g minced garlic, sauté 30 seconds. Add 150g chicken breast cubed, season with 3g cumin and 2g paprika, cook 8 minutes until golden. Serve over 120g cooked rice garnished with fresh coriander."
+- Bad example (never do this): "Cook chicken with spices and serve with rice"
+
+STRICT MEASUREMENT RULES:
+- Use grams for all weighed ingredients: meats, vegetables, grains, dairy, oils, spices, liquids
+- Use whole numbers for countable items: eggs ("2 eggs"), roti ("2 rotis"), banana ("1 banana")
+- Never use cups, bowls, tablespoons, teaspoons or any volumetric measurement
+- Grocery list must follow same rules
+
+IMPORTANT FOR JSON VALIDITY:
+- Keep descriptions to max 4 sentences to avoid response cutoff
+- Keep ingredient lists to max 7 items per meal
+- Return ONLY valid JSON, no extra text before or after
+
+Return ONLY valid JSON in this exact format:
+{
+  "summary": "2-3 sentence explanation of why this plan works for this person",
+  "groceryList": [{"item": "Chicken breast", "amount": "500g"}],
+  "days": [
+    {
+      "day": "Monday",
+      "totalCalories": 1800,
+      "protein": 120,
+      "carbs": 180,
+      "fat": 60,
+      "meals": [
+        {
+          "type": "BREAKFAST",
+          "name": "Meal name",
+          "description": "Step by step cooking instructions here minimum 3 sentences",
+          "ingredients": [{"name": "ingredient", "amount": "150g"}],
+          "calories": 400,
+          "protein": 30,
+          "carbs": 45,
+          "fat": 12,
+          "prepTime": 10
+        }
+      ],
+      "whyThisWorks": "One sentence explanation for this day"
+    }
+  ]
+}
+Include breakfast, lunch, dinner and snacks based on meals per day. Strictly avoid disliked foods and allergens. Incorporate loved foods creatively.`
           },
           { role: 'user', content: `Generate a 7-day meal plan for: ${userProfile}` }
         ],
-        temperature: 0.7,
+        temperature: 0.8,
         max_tokens: 8000,
       })
 
       const content = response.choices[0].message.content
-console.log('Raw response:', content)
+      console.log('Raw response:', content)
 
-try {
-  const jsonMatch = content.match(/\{[\s\S]*\}/)
-  if (jsonMatch) {
-    let jsonStr = jsonMatch[0]
-    // Fix truncated JSON by removing incomplete last entries
-    jsonStr = jsonStr
-      .replace(/,\s*\]/, ']')
-      .replace(/,\s*\}/, '}')
-    const plan = JSON.parse(jsonStr)
-    setMealPlan(plan)
-  } else {
-    throw new Error('No JSON found in response')
-  }
-} catch (parseErr) {
-  console.error('Parse error:', parseErr)
-  alert('Error parsing meal plan. Trying again may help!')
-}
+      try {
+        const jsonMatch = content.match(/\{[\s\S]*\}/)
+        if (jsonMatch) {
+          let jsonStr = jsonMatch[0]
+          jsonStr = jsonStr
+            .replace(/,\s*\]/g, ']')
+            .replace(/,\s*\}/g, '}')
+          const plan = JSON.parse(jsonStr)
+          setMealPlan(plan)
+        } else {
+          throw new Error('No JSON found in response')
+        }
+      } catch (parseErr) {
+        console.error('Parse error:', parseErr)
+        alert('Error parsing meal plan. Trying again may help!')
+      }
+
     } catch (err) {
       console.error('Error generating plan:', err)
       alert('Error generating plan. Please check your Groq API key.')
