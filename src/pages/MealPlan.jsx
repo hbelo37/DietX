@@ -15,10 +15,120 @@ function MacroBadge({ emoji, value, label, bg, color }) {
   )
 }
 
-function MealCard({ meal }) {
+// Feedback Modal Component
+function FeedbackModal({ meal, onSubmit, onClose }) {
+  const [reason, setReason] = useState('')
+  const reasons = ['Too spicy', 'Don\'t have ingredients', 'Dislike this dish', 'Too heavy', 'Too time-consuming', 'Other']
+
   return (
-    <div style={{ backgroundColor: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '16px', marginBottom: '12px' }}>
-      <span style={{ fontSize: '11px', fontWeight: '700', color: '#6b8f71', letterSpacing: '0.05em' }}>{meal.type}</span>
+    <div style={{
+      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      zIndex: 9999, padding: '16px'
+    }}>
+      <div style={{
+        background: 'white', borderRadius: '20px', padding: '28px',
+        width: '100%', maxWidth: '420px', boxShadow: '0 20px 60px rgba(0,0,0,0.2)'
+      }}>
+        <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#2d4a3e', marginBottom: '4px' }}>
+          🔄 Replace this meal?
+        </h3>
+        <p style={{ fontSize: '13px', color: '#6b7280', marginBottom: '20px' }}>
+          Tell us why you don't like <strong>"{meal.name}"</strong>
+        </p>
+
+        {/* Quick reason chips */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '16px' }}>
+          {reasons.map(r => (
+            <button
+              key={r}
+              onClick={() => setReason(r)}
+              style={{
+                fontSize: '12px', padding: '6px 14px', borderRadius: '100px', cursor: 'pointer',
+                border: reason === r ? '2px solid #2d7d46' : '1px solid #e5e7eb',
+                background: reason === r ? '#f0faf2' : '#f9fafb',
+                color: reason === r ? '#2d7d46' : '#4b5563',
+                fontWeight: reason === r ? '600' : '400'
+              }}
+            >
+              {r}
+            </button>
+          ))}
+        </div>
+
+        {/* Custom input */}
+        <textarea
+          placeholder="Or describe in your own words..."
+          value={reasons.includes(reason) ? '' : reason}
+          onChange={e => setReason(e.target.value)}
+          rows={2}
+          style={{
+            width: '100%', borderRadius: '12px', border: '1px solid #e5e7eb',
+            padding: '10px 14px', fontSize: '13px', color: '#2d4a3e',
+            outline: 'none', resize: 'none', boxSizing: 'border-box',
+            fontFamily: 'inherit', marginBottom: '20px'
+          }}
+        />
+
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button
+            onClick={onClose}
+            style={{
+              flex: 1, padding: '12px', borderRadius: '12px', border: '1px solid #e5e7eb',
+              background: 'white', color: '#6b7280', fontWeight: '600', fontSize: '14px', cursor: 'pointer'
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => reason.trim() && onSubmit(reason)}
+            disabled={!reason.trim()}
+            style={{
+              flex: 2, padding: '12px', borderRadius: '12px', border: 'none',
+              background: reason.trim() ? '#2d7d46' : '#d1d5db',
+              color: 'white', fontWeight: '600', fontSize: '14px',
+              cursor: reason.trim() ? 'pointer' : 'not-allowed'
+            }}
+          >
+            ✨ Regenerate Meal
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function MealCard({ meal, onRegenerate, isRegenerating }) {
+  const [showFeedback, setShowFeedback] = useState(false)
+
+  const handleSubmit = (reason) => {
+    setShowFeedback(false)
+    onRegenerate(meal, reason)
+  }
+
+  return (
+    <div style={{
+      backgroundColor: '#f9fafb', border: '1px solid #e5e7eb',
+      borderRadius: '12px', padding: '16px', marginBottom: '12px',
+      opacity: isRegenerating ? 0.5 : 1,
+      transition: 'opacity 0.3s ease'
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <span style={{ fontSize: '11px', fontWeight: '700', color: '#6b8f71', letterSpacing: '0.05em' }}>{meal.type}</span>
+        <button
+          onClick={() => setShowFeedback(true)}
+          disabled={isRegenerating}
+          style={{
+            fontSize: '11px', color: '#2d7d46', background: '#f0f7f1',
+            border: '1px solid #d1fae5', borderRadius: '100px',
+            padding: '3px 10px', cursor: isRegenerating ? 'not-allowed' : 'pointer',
+            flexShrink: 0
+          }}
+        >
+          {isRegenerating ? '⏳ Regenerating...' : '🔄 Swap'}
+        </button>
+      </div>
+
       <h4 style={{ fontWeight: '600', fontSize: '14px', color: '#2d4a3e', margin: '4px 0' }}>{meal.name}</h4>
       <p style={{ fontSize: '12px', color: '#6b7280', marginBottom: '12px' }}>{meal.description}</p>
 
@@ -64,11 +174,19 @@ function MealCard({ meal }) {
       )}
 
       <p style={{ fontSize: '12px', color: '#9ca3af', marginTop: '8px' }}>⏱ ~{meal.prepTime} mins</p>
+
+      {showFeedback && (
+        <FeedbackModal
+          meal={meal}
+          onSubmit={handleSubmit}
+          onClose={() => setShowFeedback(false)}
+        />
+      )}
     </div>
   )
 }
 
-function DayCard({ dayData, index }) {
+function DayCard({ dayData, index, onRegenerate, regeneratingMeal }) {
   const [open, setOpen] = useState(index === 0)
 
   return (
@@ -113,7 +231,12 @@ function DayCard({ dayData, index }) {
           </div>
 
           {dayData.meals?.map((meal, i) => (
-            <MealCard key={i} meal={meal} />
+            <MealCard
+              key={i}
+              meal={meal}
+              onRegenerate={(m, reason) => onRegenerate(dayData.day, m, reason)}
+              isRegenerating={regeneratingMeal === `${dayData.day}-${meal.name}`}
+            />
           ))}
 
           {dayData.whyThisWorks && (
@@ -136,28 +259,86 @@ function DayCard({ dayData, index }) {
   )
 }
 
-export default function MealPlan({ plan, onBack }) {
+export default function MealPlan({ plan: initialPlan, onBack }) {
+  const [plan, setPlan] = useState(initialPlan)
   const [groceryOpen, setGroceryOpen] = useState(false)
+  const [regeneratingMeal, setRegeneratingMeal] = useState(null)
+  const [toast, setToast] = useState(null)
+
+  const showToast = (msg, type = 'success') => {
+    setToast({ msg, type })
+    setTimeout(() => setToast(null), 3000)
+  }
+
+  const handleRegenerate = async (dayName, meal, reason) => {
+    const key = `${dayName}-${meal.name}`
+    setRegeneratingMeal(key)
+
+    try {
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1000,
+          messages: [{
+            role: 'user',
+            content: `You are a diet planner. Replace this meal with a different one.
+Meal to replace: "${meal.name}" (type: ${meal.type}, day: ${dayName})
+Reason for replacement: "${reason}"
+
+Return ONLY a valid JSON object with exactly these fields:
+{
+  "name": "meal name",
+  "type": "${meal.type}",
+  "description": "short description",
+  "calories": number,
+  "protein": number,
+  "carbs": number,
+  "fat": number,
+  "prepTime": number,
+  "ingredients": [{"name": "ingredient", "amount": "quantity"}]
+}
+
+Do not include any explanation, markdown, or extra text. Only return the JSON object.`
+          }]
+        })
+      })
+
+      const data = await response.json()
+      const text = data.content.map(i => i.text || '').join('')
+      const clean = text.replace(/```json|```/g, '').trim()
+      const newMeal = JSON.parse(clean)
+
+      setPlan(prev => ({
+        ...prev,
+        days: prev.days.map(day =>
+          day.day === dayName
+            ? { ...day, meals: day.meals.map(m => m.name === meal.name ? newMeal : m) }
+            : day
+        )
+      }))
+
+      showToast(`✅ "${meal.name}" replaced with "${newMeal.name}"!`)
+    } catch (err) {
+      console.error('Regeneration error:', err)
+      showToast('❌ Failed to regenerate meal. Try again.', 'error')
+    } finally {
+      setRegeneratingMeal(null)
+    }
+  }
 
   const exportPDF = async () => {
-    // First expand all day cards
-    const allDayButtons = document.querySelectorAll('#meal-plan-content button')
-    
-    // Open all days temporarily
-    const originalStates = []
-    
     try {
-      // Create a printable div with all data
       const printDiv = document.createElement('div')
       printDiv.style.cssText = 'position:fixed;top:0;left:0;width:800px;background:#f5f0e8;padding:40px;z-index:9999;font-family:sans-serif;'
-      
-      // Title
+
       printDiv.innerHTML = `
         <div style="text-align:center;margin-bottom:30px;padding:30px;background:linear-gradient(135deg,#1a3a2a,#2d6a4f);border-radius:16px;color:white;">
           <h1 style="font-size:28px;font-weight:700;margin-bottom:8px;">⚡ DietX — Your 7-Day Meal Plan</h1>
           <p style="opacity:0.8;font-size:14px;">${plan.summary}</p>
         </div>
-  
+
         ${plan.days?.map((day, di) => `
           <div style="background:white;border-radius:16px;padding:24px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:12px;border-bottom:2px solid #f0f7f1;">
@@ -172,13 +353,12 @@ export default function MealPlan({ plan, onBack }) {
                 <span style="background:#d1fae5;color:#065f46;padding:4px 12px;border-radius:100px;font-size:12px;font-weight:600;">🥑 ${day.fat}g fat</span>
               </div>
             </div>
-  
+
             ${day.meals?.map(meal => `
               <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin-bottom:12px;">
                 <span style="font-size:11px;font-weight:700;color:#6b8f71;text-transform:uppercase;letter-spacing:0.05em;">${meal.type}</span>
                 <h3 style="font-size:15px;font-weight:700;color:#2d4a3e;margin:4px 0;">${meal.name}</h3>
                 <p style="font-size:12px;color:#6b7280;margin-bottom:12px;">${meal.description}</p>
-                
                 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;">
                   <div style="text-align:center;padding:8px;border-radius:10px;background:#fef3c7;">
                     <div style="font-size:12px;font-weight:700;color:#92400e;">${meal.calories}</div>
@@ -197,7 +377,6 @@ export default function MealPlan({ plan, onBack }) {
                     <div style="font-size:10px;color:#065f46;">fat</div>
                   </div>
                 </div>
-  
                 ${meal.ingredients?.length > 0 ? `
                   <div>
                     <p style="font-size:12px;font-weight:600;color:#2d4a3e;margin-bottom:6px;">📋 Ingredients:</p>
@@ -211,7 +390,7 @@ export default function MealPlan({ plan, onBack }) {
                 <p style="font-size:11px;color:#9ca3af;margin-top:8px;">⏱ ~${meal.prepTime} mins</p>
               </div>
             `).join('')}
-  
+
             ${day.whyThisWorks ? `
               <div style="background:linear-gradient(135deg,#f0faf2,#e8f5ea);border-radius:12px;padding:14px 18px;border:1px solid #d1fae5;">
                 <p style="font-size:11px;font-weight:700;color:#2d7d46;margin-bottom:4px;">✨ WHY THIS WORKS FOR YOU</p>
@@ -220,7 +399,7 @@ export default function MealPlan({ plan, onBack }) {
             ` : ''}
           </div>
         `).join('')}
-  
+
         ${plan.groceryList?.length > 0 ? `
           <div style="background:white;border-radius:16px;padding:24px;margin-bottom:16px;">
             <h2 style="font-size:18px;font-weight:700;color:#2d4a3e;margin-bottom:16px;">🛒 Weekly Grocery List</h2>
@@ -234,37 +413,28 @@ export default function MealPlan({ plan, onBack }) {
           </div>
         ` : ''}
       `
-  
+
       document.body.appendChild(printDiv)
-  
-      const canvas = await html2canvas(printDiv, {
-        scale: 2,
-        backgroundColor: '#f5f0e8',
-        width: 800,
-        windowWidth: 800
-      })
-  
+      const canvas = await html2canvas(printDiv, { scale: 2, backgroundColor: '#f5f0e8', width: 800, windowWidth: 800 })
       document.body.removeChild(printDiv)
-  
+
       const imgData = canvas.toDataURL('image/png')
       const pdf = new jsPDF('p', 'mm', 'a4')
       const pdfWidth = pdf.internal.pageSize.getWidth()
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width
       let heightLeft = pdfHeight
       let position = 0
-  
+
       pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight)
       heightLeft -= pdf.internal.pageSize.getHeight()
-  
       while (heightLeft > 0) {
         position = heightLeft - pdfHeight
         pdf.addPage()
         pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight)
         heightLeft -= pdf.internal.pageSize.getHeight()
       }
-  
+
       pdf.save('DietX-MealPlan.pdf')
-  
     } catch (err) {
       console.error('Export error:', err)
       alert('Export failed: ' + err.message)
@@ -273,6 +443,20 @@ export default function MealPlan({ plan, onBack }) {
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f5f0e8' }}>
+
+      {/* Toast Notification */}
+      {toast && (
+        <div style={{
+          position: 'fixed', top: '20px', left: '50%', transform: 'translateX(-50%)',
+          background: toast.type === 'error' ? '#fee2e2' : '#d1fae5',
+          color: toast.type === 'error' ? '#991b1b' : '#065f46',
+          padding: '12px 24px', borderRadius: '100px', fontSize: '14px', fontWeight: '600',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.15)', zIndex: 10000,
+          border: `1px solid ${toast.type === 'error' ? '#fca5a5' : '#6ee7b7'}`
+        }}>
+          {toast.msg}
+        </div>
+      )}
 
       {/* Hero */}
       <div style={{
@@ -344,7 +528,13 @@ export default function MealPlan({ plan, onBack }) {
 
         {/* Day Cards */}
         {plan.days?.map((day, i) => (
-          <DayCard key={i} dayData={day} index={i} />
+          <DayCard
+            key={i}
+            dayData={day}
+            index={i}
+            onRegenerate={handleRegenerate}
+            regeneratingMeal={regeneratingMeal}
+          />
         ))}
 
         {/* Buttons */}
