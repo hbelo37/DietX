@@ -275,40 +275,13 @@ export default function MealPlan({ plan: initialPlan, onBack }) {
     setRegeneratingMeal(key)
 
     try {
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
+      const response = await fetch('/api/regenerate-meal', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 1000,
-          messages: [{
-            role: 'user',
-            content: `You are a diet planner. Replace this meal with a different one.
-Meal to replace: "${meal.name}" (type: ${meal.type}, day: ${dayName})
-Reason for replacement: "${reason}"
-
-Return ONLY a valid JSON object with exactly these fields:
-{
-  "name": "meal name",
-  "type": "${meal.type}",
-  "description": "short description",
-  "calories": number,
-  "protein": number,
-  "carbs": number,
-  "fat": number,
-  "prepTime": number,
-  "ingredients": [{"name": "ingredient", "amount": "quantity"}]
-}
-
-Do not include any explanation, markdown, or extra text. Only return the JSON object.`
-          }]
-        })
+        body: JSON.stringify({ meal, reason })
       })
-
-      const data = await response.json()
-      const text = data.content.map(i => i.text || '').join('')
-      const clean = text.replace(/```json|```/g, '').trim()
-      const newMeal = JSON.parse(clean)
+      
+      const newMeal = await response.json()
 
       setPlan(prev => ({
         ...prev,

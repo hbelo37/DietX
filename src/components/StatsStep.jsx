@@ -13,14 +13,20 @@ export default function StatsStep({ data, onUpdate, onNext }) {
   const [gender, setGender] = useState(data.gender || '')
   const [height, setHeight] = useState(data.height || '')
   const [weight, setWeight] = useState(data.weight || '')
-  const [goal, setGoal] = useState(data.goal || '')
+  const [selectedGoals, setSelectedGoals] = useState(data.goals || [])
+
+  const toggleGoal = (id) => {
+    setSelectedGoals(prev =>
+      prev.includes(id) ? prev.filter(g => g !== id) : [...prev, id]
+    )
+  }
 
   const handleNext = () => {
-    if (!age || !gender || !height || !weight || !goal) {
-      alert('Please fill in all fields')
+    if (!age || !gender || !height || !weight || selectedGoals.length === 0) {
+      alert('Please fill in all fields and select at least one goal')
       return
     }
-    onUpdate({ age, gender, height, weight, goal })
+    onUpdate({ age, gender, height, weight, goals: selectedGoals })
     onNext()
   }
 
@@ -99,23 +105,31 @@ export default function StatsStep({ data, onUpdate, onNext }) {
         </div>
       </div>
 
-      {/* Goal */}
+      {/* Goals — multi-select */}
       <div style={{ marginBottom: '36px' }}>
-        <label style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-dark)', display: 'block', marginBottom: '12px' }}>
-          What's your main goal?
+        <label style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-dark)', display: 'block', marginBottom: '4px' }}>
+          What are your goals?
         </label>
+        <p style={{ fontSize: '12px', color: 'var(--text-mid)', marginBottom: '12px' }}>
+          Select all that apply
+        </p>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
           {goals.map(g => (
             <button
               key={g.id}
-              onClick={() => setGoal(g.id)}
-              className={`pill-btn ${goal === g.id ? 'selected' : ''}`}
+              onClick={() => toggleGoal(g.id)}
+              className={`pill-btn ${selectedGoals.includes(g.id) ? 'selected' : ''}`}
               style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
             >
               <span>{g.emoji}</span> {g.label}
             </button>
           ))}
         </div>
+        {selectedGoals.length > 0 && (
+          <p style={{ fontSize: '12px', color: 'var(--green-light)', marginTop: '10px', fontWeight: '500' }}>
+            {selectedGoals.length} goal{selectedGoals.length > 1 ? 's' : ''} selected
+          </p>
+        )}
       </div>
 
       {/* Navigation */}

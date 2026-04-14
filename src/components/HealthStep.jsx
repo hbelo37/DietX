@@ -18,6 +18,14 @@ const budgets = [
   { id: 'nolimit', label: 'No limit', desc: 'Best ingredients, no restrictions', emoji: '✨' },
 ]
 
+const goalLabels = {
+  lose: 'Lose weight',
+  muscle: 'Gain muscle',
+  maintain: 'Maintain weight',
+  healthy: 'Eat healthier',
+  energy: 'More energy',
+}
+
 export default function HealthStep({ data, onUpdate, onBack, setMealPlan }) {
   const [conditions, setConditions] = useState(data.conditions || [])
   const [budget, setBudget] = useState(data.budget || '')
@@ -42,9 +50,17 @@ export default function HealthStep({ data, onUpdate, onBack, setMealPlan }) {
         dangerouslyAllowBrowser: true
       })
 
+      // Handle both old single goal (string) and new multi goals (array)
+      const goalsArray = Array.isArray(data.goals)
+        ? data.goals
+        : data.goal
+          ? [data.goal]
+          : []
+      const goalsText = goalsArray.map(g => goalLabels[g] || g).join(', ') || 'General health'
+
       const userProfile = `
         Age: ${data.age}, Gender: ${data.gender}, Height: ${data.height}cm, Weight: ${data.weight}kg
-        Goal: ${data.goal}, Activity: ${data.activity}
+        Goals: ${goalsText}, Activity: ${data.activity}
         Max cooking time: ${data.cookingTime} mins, Meals per day: ${data.mealsPerDay}
         Foods they love: ${data.lovedFoods?.join(', ') || 'none'}
         Foods they dislike: ${data.dislikedFoods?.join(', ') || 'none'}
@@ -66,6 +82,14 @@ VARIETY RULES - STRICTLY FOLLOW:
 - Vary cooking styles daily: grilling, baking, stir-frying, steaming, slow cooking, sauteing
 - Vary cuisines across the week: Indian, Mediterranean, Asian, Mexican, Middle Eastern, Continental
 - Breakfast must never repeat: rotate between egg dishes, porridges, smoothie bowls, parathas, toasts, idli, upma, omelettes, pancakes
+
+GOAL-BASED NUTRITION RULES:
+- If goals include "Lose weight": calorie deficit, high fiber, low refined carbs, lean proteins
+- If goals include "Gain muscle": calorie surplus, high protein (2g per kg bodyweight), complex carbs around workouts
+- If goals include "Maintain weight": balanced macros, maintenance calories
+- If goals include "Eat healthier": whole foods, minimal processed ingredients, rich in micronutrients
+- If goals include "More energy": complex carbs, iron-rich foods, B-vitamin sources, avoid sugar spikes
+- If multiple goals selected, balance the nutrition approach to serve all goals simultaneously
 
 RECIPE RULES - BE VERY SPECIFIC:
 - Description must be a clear step-by-step mini recipe of 3-4 sentences
