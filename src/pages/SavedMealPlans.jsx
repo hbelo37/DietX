@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../context/DietXAuthContext'
 
 export default function SavedMealPlans() {
@@ -6,11 +7,7 @@ export default function SavedMealPlans() {
   const [plans, setPlans] = useState([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    loadPlans()
-  }, [])
-
-  const loadPlans = async () => {
+  const loadPlans = useCallback(async () => {
     try {
       const data = await getSavedMealPlans()
       setPlans(data || [])
@@ -19,7 +16,11 @@ export default function SavedMealPlans() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [getSavedMealPlans])
+
+  useEffect(() => {
+    loadPlans()
+  }, [loadPlans])
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--cream)' }}>
@@ -40,9 +41,9 @@ export default function SavedMealPlans() {
             <p style={{ color: 'var(--text-mid)', marginBottom: '16px' }}>
               No saved plans yet. Create your first one!
             </p>
-            <a href="/onboarding" className="btn-primary">
+            <Link to="/onboarding" className="btn-primary">
               ✨ Create Meal Plan
-            </a>
+            </Link>
           </div>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>

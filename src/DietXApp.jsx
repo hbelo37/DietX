@@ -1,8 +1,7 @@
-import { useState, useEffect } from 'react'
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { useState } from 'react'
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom'
 import { useAuth } from './context/DietXAuthContext'
-import { Login } from './components/Auth/DietXAuthComponents'
-import { SignUp } from './components/Auth/DietXAuthComponents'
+import { Login, SignUp } from './components/auth/DietXAuthComponents'
 import StatsStep from './components/StatsStep'
 import LifestyleStep from './components/LifestyleStep'
 import FoodsStep from './components/FoodsStep'
@@ -10,15 +9,16 @@ import DietStep from './components/DietStep'
 import HealthStep from './components/HealthStep'
 import MealPlan from './pages/MealPlan'
 import SavedMealPlans from './pages/SavedMealPlans'
-import Dashboard from './pages/Dashboard'
+import Dashboard from './pages/DietXDashboard'
 
 const steps = ['Stats', 'Lifestyle', 'Foods', 'Diet', 'Health']
 
 function OnboardingWizard() {
+  const navigate = useNavigate()
   const [currentStep, setCurrentStep] = useState(0)
   const [formData, setFormData] = useState({})
   const [mealPlan, setMealPlan] = useState(null)
-  const { user, savePreferences, saveMealPlan } = useAuth()
+  const { savePreferences, saveMealPlan } = useAuth()
 
   const updateFormData = (data) => setFormData(prev => ({ ...prev, ...data }))
   const next = async () => {
@@ -48,8 +48,7 @@ function OnboardingWizard() {
           try {
             const planName = `Meal Plan - ${new Date().toLocaleDateString()}`
             await saveMealPlan(planName, mealPlan)
-            // Navigate to saved plans or dashboard
-            window.location.href = '/dashboard'
+            navigate('/dashboard', { replace: true })
           } catch (err) {
             console.error('Failed to save meal plan:', err)
             alert('Failed to save your meal plan. Please try again.')
@@ -186,7 +185,19 @@ function ProtectedRoute({ children }) {
   return children
 }
 
-export default function App() {
+function RootRedirect() {
+  const { user, loading } = useAuth()
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <p>Loading...</p>
+      </div>
+    )
+  }
+  return <Navigate to={user ? '/dashboard' : '/login'} replace />
+}
+
+export default function DietXApp() {
   return (
     <Routes>
       {/* Auth Routes */}
@@ -221,8 +232,8 @@ export default function App() {
         }
       />
 
-      {/* Default Route */}
-      <Route path="/" element={<Navigate to="/login" replace />} />
+      {/* Default */}
+      <Route path="/" element={<RootRedirect />} />
     </Routes>
   )
 }

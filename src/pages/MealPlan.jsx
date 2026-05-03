@@ -259,7 +259,7 @@ function DayCard({ dayData, index, onRegenerate, regeneratingMeal }) {
   )
 }
 
-export default function MealPlan({ plan: initialPlan, onBack }) {
+export default function MealPlan({ plan: initialPlan, onBack, onSave }) {
   const [plan, setPlan] = useState(initialPlan)
   const [groceryOpen, setGroceryOpen] = useState(false)
   const [regeneratingMeal, setRegeneratingMeal] = useState(null)
@@ -511,7 +511,7 @@ export default function MealPlan({ plan: initialPlan, onBack }) {
         ))}
 
         {/* Buttons */}
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', marginTop: '24px' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '12px', marginTop: '24px' }}>
           <button
             onClick={onBack}
             style={{
@@ -522,6 +522,19 @@ export default function MealPlan({ plan: initialPlan, onBack }) {
           >
             ✨ Regenerate Plan
           </button>
+          {typeof onSave === 'function' && (
+            <button
+              type="button"
+              onClick={onSave}
+              style={{
+                padding: '12px 32px', borderRadius: '12px', border: '2px solid #2d7d46',
+                backgroundColor: '#ffffff', color: '#2d7d46', fontWeight: '600',
+                fontSize: '15px', cursor: 'pointer'
+              }}
+            >
+              💾 Save plan
+            </button>
+          )}
           <button
             onClick={exportPDF}
             style={{

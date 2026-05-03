@@ -1,12 +1,5 @@
-import { createRoot } from 'react-dom/client'
-import { BrowserRouter } from 'react-router-dom'
-import App from './DietXApp'
-import { AuthProvider } from './context/DietXAuthContext'
+import DietXApp from './DietXApp'
 
-createRoot(document.getElementById('root')).render(
-  <BrowserRouter>
-    <AuthProvider>
-      <App />
-    </AuthProvider>
-  </BrowserRouter>
-)
+export default function App() {
+  return <DietXApp />
+}
