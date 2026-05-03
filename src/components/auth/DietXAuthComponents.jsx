@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Link, Navigate, useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { Link, Navigate, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/DietXAuthContext'
 
 const labelStyle = { display: 'block', fontSize: '13px', fontWeight: '600', marginBottom: '6px', color: 'var(--text-dark)' }
@@ -32,6 +32,27 @@ const oauthDividerStyle = {
 }
 const oauthDividerLine = { flex: 1, height: '1px', background: '#e8ede9' }
 
+function oauthErrorFromUrl(search, hash) {
+  const qp = new URLSearchParams(search)
+  const qsErr = qp.get('error_description') || qp.get('error_code') || qp.get('error')
+  if (qsErr || qp.has('error')) {
+    try {
+      return decodeURIComponent((qp.get('error_description') || qsErr || 'Sign-in failed').replace(/\+/g, ' '))
+    } catch {
+      return qp.get('error_description') || qsErr || 'Sign-in failed'
+    }
+  }
+  const normalized = hash.replace(/^#\??/, '')
+  const hp = new URLSearchParams(normalized)
+  const hDesc = hp.get('error_description') || hp.get('error_code') || hp.get('error')
+  if (!hDesc && !normalized.includes('error')) return ''
+  try {
+    return decodeURIComponent((hp.get('error_description') || hDesc || 'Sign-in failed').replace(/\+/g, ' '))
+  } catch {
+    return hp.get('error_description') || hDesc || 'Sign-in failed'
+  }
+}
+
 const gradientBg = (
   <>
     <div style={{
@@ -52,11 +73,25 @@ const gradientBg = (
 export function Login() {
   const { user, signIn, signInWithGoogle } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [pending, setPending] = useState(false)
   const [googlePending, setGooglePending] = useState(false)
+
+  useEffect(() => {
+    const fromUrl = oauthErrorFromUrl(location.search, location.hash)
+    if (fromUrl) {
+      const friendly = /exchange external code/i.test(fromUrl)
+        ? `${fromUrl} Usually this means Google OAuth is misconfigured (Supabase Dashboard → Authentication → Providers → Google, and Google Cloud redirect URI must include your Supabase project callback).`
+        : fromUrl
+      setError((prev) => (prev ? prev : friendly))
+    }
+    if (location.search || location.hash) {
+      navigate({ pathname: '/login', search: '', hash: '' }, { replace: true })
+    }
+  }, [location.search, location.hash, navigate])
 
   if (user) {
     return <Navigate to="/dashboard" replace />

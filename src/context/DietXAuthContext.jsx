@@ -83,7 +83,8 @@ export function AuthProvider({ children }) {
   }, [])
 
   const signInWithGoogle = useCallback(() => {
-    const redirectTo = `${window.location.origin}/dashboard`
+    // Use site root so Vercel always serves SPA + Supabase can finish PKCE / hash recovery before client routes elsewhere.
+    const redirectTo = `${window.location.origin}/`
     return supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo },

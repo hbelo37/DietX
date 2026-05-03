@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Routes, Route, Navigate, useNavigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from './context/DietXAuthContext'
 import { Login, SignUp } from './components/auth/DietXAuthComponents'
 import StatsStep from './components/StatsStep'
@@ -171,6 +171,7 @@ function OnboardingWizard() {
 // Protected route component
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth()
+  const location = useLocation()
 
   if (loading) {
     return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
@@ -179,7 +180,16 @@ function ProtectedRoute({ children }) {
   }
 
   if (!user) {
-    return <Navigate to="/login" replace />
+    return (
+      <Navigate
+        replace
+        to={{
+          pathname: '/login',
+          search: location.search,
+          hash: location.hash,
+        }}
+      />
+    )
   }
 
   return children
