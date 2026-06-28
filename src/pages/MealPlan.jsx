@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
+import { regenerateMeal } from '../lib/regenerateMeal'
 
 function MacroBadge({ emoji, value, label, bg, color }) {
   return (
@@ -263,6 +264,7 @@ export default function MealPlan({ plan: initialPlan, onBack, onSave }) {
   const [plan, setPlan] = useState(initialPlan)
   const [groceryOpen, setGroceryOpen] = useState(false)
   const [regeneratingMeal, setRegeneratingMeal] = useState(null)
+  const [saving, setSaving] = useState(false)
   const [toast, setToast] = useState(null)
 
   const showToast = (msg, type = 'success') => {
@@ -275,13 +277,7 @@ export default function MealPlan({ plan: initialPlan, onBack, onSave }) {
     setRegeneratingMeal(key)
 
     try {
-      const response = await fetch('/api/regenerate-meal', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ meal, reason })
-      })
-      
-      const newMeal = await response.json()
+      const newMeal = await regenerateMeal(meal, reason)
 
       setPlan(prev => ({
         ...prev,
@@ -295,9 +291,22 @@ export default function MealPlan({ plan: initialPlan, onBack, onSave }) {
       showToast(`✅ "${meal.name}" replaced with "${newMeal.name}"!`)
     } catch (err) {
       console.error('Regeneration error:', err)
-      showToast('❌ Failed to regenerate meal. Try again.', 'error')
+      showToast(err.message || '❌ Failed to regenerate meal. Try again.', 'error')
     } finally {
       setRegeneratingMeal(null)
+    }
+  }
+
+  const handleSave = async () => {
+    if (typeof onSave !== 'function' || saving) return
+    setSaving(true)
+    try {
+      await onSave(plan)
+    } catch (err) {
+      console.error('Save error:', err)
+      showToast(err.message || '❌ Failed to save meal plan. Try again.', 'error')
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -525,14 +534,15 @@ export default function MealPlan({ plan: initialPlan, onBack, onSave }) {
           {typeof onSave === 'function' && (
             <button
               type="button"
-              onClick={onSave}
+              onClick={handleSave}
+              disabled={saving}
               style={{
                 padding: '12px 32px', borderRadius: '12px', border: '2px solid #2d7d46',
-                backgroundColor: '#ffffff', color: '#2d7d46', fontWeight: '600',
-                fontSize: '15px', cursor: 'pointer'
+                backgroundColor: '#ffffff', color: saving ? '#9ca3af' : '#2d7d46', fontWeight: '600',
+                fontSize: '15px', cursor: saving ? 'not-allowed' : 'pointer'
               }}
             >
-              💾 Save plan
+              {saving ? '⏳ Saving...' : '💾 Save plan'}
             </button>
           )}
           <button

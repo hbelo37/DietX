@@ -65,7 +65,9 @@ export function AuthProvider({ children }) {
       plan_name: planName,
       plan_data: planData,
     })
-    if (error) throw error
+    if (error) {
+      throw new Error(error.message || 'Could not save meal plan. Check that saved_meal_plans exists in Supabase.')
+    }
   }, [])
 
   const getSavedMealPlans = useCallback(async () => {

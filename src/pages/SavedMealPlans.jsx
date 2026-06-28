@@ -1,11 +1,13 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/DietXAuthContext'
+import MealPlan from './MealPlan'
 
 export default function SavedMealPlans() {
-  const { getSavedMealPlans } = useAuth()
+  const { getSavedMealPlans, saveMealPlan } = useAuth()
   const [plans, setPlans] = useState([])
   const [loading, setLoading] = useState(true)
+  const [viewingPlan, setViewingPlan] = useState(null)
 
   const loadPlans = useCallback(async () => {
     try {
@@ -21,6 +23,21 @@ export default function SavedMealPlans() {
   useEffect(() => {
     loadPlans()
   }, [loadPlans])
+
+  if (viewingPlan) {
+    return (
+      <MealPlan
+        plan={viewingPlan.plan_data}
+        onBack={() => setViewingPlan(null)}
+        onSave={async (currentPlan) => {
+          const planName = `${viewingPlan.plan_name} (updated ${new Date().toLocaleDateString()})`
+          await saveMealPlan(planName, currentPlan)
+          await loadPlans()
+          setViewingPlan(null)
+        }}
+      />
+    )
+  }
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--cream)' }}>
@@ -60,18 +77,22 @@ export default function SavedMealPlans() {
                 <p style={{ color: 'var(--text-mid)', fontSize: '13px' }}>
                   Created {new Date(plan.created_at).toLocaleDateString()}
                 </p>
-                <button style={{
-                  marginTop: '16px',
-                  width: '100%',
-                  padding: '10px 16px',
-                  borderRadius: '8px',
-                  border: '1px solid var(--green-mid)',
-                  background: 'white',
-                  color: 'var(--green-mid)',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  fontSize: '13px'
-                }}>
+                <button
+                  type="button"
+                  onClick={() => setViewingPlan(plan)}
+                  style={{
+                    marginTop: '16px',
+                    width: '100%',
+                    padding: '10px 16px',
+                    borderRadius: '8px',
+                    border: '1px solid var(--green-mid)',
+                    background: 'white',
+                    color: 'var(--green-mid)',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    fontSize: '13px'
+                  }}
+                >
                   View Plan
                 </button>
               </div>

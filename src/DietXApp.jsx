@@ -44,15 +44,10 @@ function OnboardingWizard() {
           setCurrentStep(0)
           setFormData({})
         }}
-        onSave={async () => {
-          try {
-            const planName = `Meal Plan - ${new Date().toLocaleDateString()}`
-            await saveMealPlan(planName, mealPlan)
-            navigate('/dashboard', { replace: true })
-          } catch (err) {
-            console.error('Failed to save meal plan:', err)
-            alert('Failed to save your meal plan. Please try again.')
-          }
+        onSave={async (currentPlan) => {
+          const planName = `Meal Plan - ${new Date().toLocaleDateString()}`
+          await saveMealPlan(planName, currentPlan)
+          navigate('/dashboard', { replace: true })
         }}
         formData={formData}
       />
